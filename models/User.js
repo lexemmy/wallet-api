@@ -2,7 +2,7 @@
 
 const wallet = new mongoose.Schema({
     currency: String,
-    amount: Number
+    amount: {type:Number, default: 0}
 });
 
 const userSchema = new mongoose.Schema({

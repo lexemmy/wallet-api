@@ -15,3 +15,4 @@ exports.hasAuth = function authenticateToken(req, res, next){
 		next()
 	});
 };
+
