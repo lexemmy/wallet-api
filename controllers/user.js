@@ -1,8 +1,10 @@
 const User = require('../models/User');
 const Transaction = require('../models/Transaction');
+const Admin = require('../models/Admin');
 const bcrypt = require('bcrypt');
 const joi = require('joi');
 const jwt = require('jsonwebtoken');
+const axios = require('axios');
 
 
 
@@ -92,7 +94,21 @@ exports.signin = (req, res) => {
 	}).catch(err => console.log(err))
 };
 
+exports.adminlogin = (req, res) => {
+	if (req.body.username == 'admin' && req.body.password == '01234Admin') {
+		Admin.findOne({ username: req.body.username }).then(admin =>{
+			const accessToken = jwt.sign(admin.toJSON(), process.env.ACCESS_TOKEN_SECRET);
+			res.status(200).json({
+			status: 'success',
+			data: admin,
+			accessToken: accessToken
+			});
+		});
+	}
+}
+
 exports.fundwallet = (req, res) => {
+	let currency = req.body.currency;
 	User.findOne({ email: req.body.email }).then(user =>{
 
 			if (user == null) {
@@ -104,7 +120,6 @@ exports.fundwallet = (req, res) => {
 
 			if (user.role == "noob") {
 				if (user.wallet[0].currency == req.body.currency) {
-					console.log("here")
 					const newTransaction = new Transaction({
 							email: user.email,
 							amount: req.body.amount,
@@ -121,7 +136,33 @@ exports.fundwallet = (req, res) => {
 			        .catch(err => console.log(err))
 					
 				} else {
-					//convert to main and send request
+					switch(currency){
+						case usd:
+							amount = req.body.amount * 350;
+							break;
+						case gbp:
+							amount = req.body.amount * 500;
+							break;
+						case ngn:
+							amount = req.body.amount * 150;
+							break;
+					}
+
+					const newTransaction = new Transaction({
+							email: user.email,
+							amount: amount,
+							status: 'pending',
+							type: 'deposit'
+						});
+					newTransaction.save()
+			        .then(transaction => {
+			        	return res.status(200).json({
+							status: 'success',
+							message: 'deposit request sent, waiting approval',
+						});
+					})
+			        .catch(err => console.log(err))
+					
 				}
 			} else if (user.role == "elite") {
 
@@ -180,7 +221,32 @@ exports.withdraw = (res, req) => {
 						})
 				        .catch(err => console.log(err))
 				} else {
-					//convert to main and send request
+					switch(currency){
+						case usd:
+							amount = req.body.amount * 350;
+							break;
+						case gbp:
+							amount = req.body.amount * 500;
+							break;
+						case ngn:
+							amount = req.body.amount * 150;
+							break;
+					}
+
+					const newTransaction = new Transaction({
+							email: user.email,
+							amount: amount,
+							status: 'pending',
+							type: 'deposit'
+						})
+						newTransaction.save()
+				        .then(transaction => {
+				        	return res.status(200).json({
+								status: 'success',
+								message: 'withdrawal request sent, waiting approval',
+							});
+						})
+				        .catch(err => console.log(err))
 				}
 			} else if (user.role == "elite") {
 
@@ -198,6 +264,20 @@ exports.withdraw = (res, req) => {
 					
 				} else {
 					//convert to main currency and withdraw
+					switch(currency){
+						case usd:
+							amount = req.body.amount * 350;
+							break;
+						case gbp:
+							amount = req.body.amount * 500;
+							break;
+						case ngn:
+							amount = req.body.amount * 150;
+							break;
+					}
+
+					user.wallet[0].amount -= amount
+
 					user.save()
 			        .then(user => {
 			        	return res.status(200).json({
